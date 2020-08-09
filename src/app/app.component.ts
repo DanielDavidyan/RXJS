@@ -1,5 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import {BehaviorSubject, combineLatest, Observable, of} from "rxjs";
+import {map} from "rxjs/operators";
 
 @Component({
   selector: 'app-root',
@@ -11,10 +12,10 @@ export class AppComponent implements OnInit {
   ngOnInit() {
     interface Product {
       name: string;
-      description?: string;
       price: number;
-      img?: string;
       limit: number;
+      description?: string;
+      img?: string;
     }
 
     class Cart {
@@ -26,33 +27,33 @@ export class AppComponent implements OnInit {
 
       public addProduct(product: Product) {
         if (product.limit > 0) {
-          let currStream = this.productsInCart.getValue();
-          currStream[product.name] = 1;
-          this.productsInCart.next(currStream);
+          let cart = this.productsInCart.getValue();
+          cart[product.name] = 1;
+          this.productsInCart.next(cart);
         } else
           console.log("Sold out!");
       }
 
       public updateProductAmount(product: Product, amount: number) {
         if (product.limit >= amount) {
-          let currStream = this.productsInCart.getValue();
-          currStream[product.name] = amount;
-          this.productsInCart.next(currStream);
+          let cart = this.productsInCart.getValue();
+          cart[product.name] = amount;
+          this.productsInCart.next(cart);
         } else
-          console.log("You can buy maximum " + product.limit + " " + product.name);
+          console.log(`You can buy maximum ${product.limit} ${product.name}`);
       }
 
       public removeProduct(product: Product) {
-        let tempProd = this.productsInCart.getValue();
-        delete tempProd[product.name];
-        this.productsInCart.next(tempProd);
+        let cart = this.productsInCart.getValue();
+        delete cart[product.name];
+        this.productsInCart.next(cart);
       }
 
       public getTotalPrice(stock: Observable<Product[]>) {
         let totalPrice = 0;
         combineLatest([this.productsInCart, stock]).subscribe(([cart, stock]) => {
-          const arrayProductsCart: string[] = Object.keys(cart);
-          totalPrice = arrayProductsCart.reduce((total, item) =>
+          const ProductsCart: string[] = Object.keys(cart);
+          totalPrice = ProductsCart.reduce((total, item) =>
             total + (cart[item] * stock.find((prod) => prod.name === item).price)
             , 0);
         })
@@ -61,8 +62,8 @@ export class AppComponent implements OnInit {
 
       public checkout(stock: Observable<Product[]>) {
         combineLatest([this.productsInCart, stock]).subscribe(([cart, stock]) => {
-          const arrayProductsCart: string[] = Object.keys(cart);
-          arrayProductsCart.map(cartItem => {
+          const ProductsCart: string[] = Object.keys(cart);
+          ProductsCart.map(cartItem => {
             const stockProduct = stock.find(stockItem => stockItem.name === cartItem);
             stockProduct.limit -= cart[cartItem];
           })
@@ -71,8 +72,6 @@ export class AppComponent implements OnInit {
     }
 
     (function main() {
-      console.log('-------------------------------');
-
       let stock: Observable<Product[]>;
       const prod1 = {name: "Bamba", price: 5, limit: 10};
       const prod2 = {name: "Bisli", price: 7, limit: 15};
@@ -81,32 +80,16 @@ export class AppComponent implements OnInit {
       const prod5 = {name: "Doritos", price: 9, limit: 25};
       const products = [prod1, prod2, prod3, prod4, prod5];
       stock = of(products);
-
       const cart = new Cart();
-      products.map(item => cart.addProduct(item));
+      products.map(products => cart.addProduct(products));
 
-      console.log('My stock:')
-      stock.subscribe(item => console.log(item));
+      stock.subscribe(products => console.log('My stock:', products));
       console.log('My cart:', cart.productsInCart.getValue());
 
-      cart.updateProductAmount(prod1, 5);
-      console.log(`After update the amount of ${prod1.name} to 5`);
-      console.log('My cart:', cart.productsInCart.getValue());
-
-      console.log(`After remove ${prod2.name} from the cart`);
+      cart.updateProductAmount(prod1, 5)
       cart.removeProduct(prod2);
-      console.log('My cart:', cart.productsInCart.getValue());
-
-      console.log('Total price:');
       cart.getTotalPrice(stock);
-
-      console.log('Checkout:');
       cart.checkout(stock);
-      console.log('My cart:', cart.productsInCart.getValue());
-      console.log('My stock:')
-      stock.subscribe(item => console.log(item));
-
-      console.log('-------------------------------');
     })();
   }
 }
