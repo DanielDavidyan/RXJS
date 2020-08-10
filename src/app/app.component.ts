@@ -52,9 +52,9 @@ export class AppComponent implements OnInit {
       public getTotalPrice(stock: Observable<Product[]>) {
         let totalPrice = 0;
         combineLatest([this.productsInCart, stock]).subscribe(([cart, stock]) => {
-          const ProductsCart: string[] = Object.keys(cart);
-          totalPrice = ProductsCart.reduce((total, item) =>
-            total + (cart[item] * stock.find((prod) => prod.name === item).price)
+          const ProductsInCart: string[] = Object.keys(cart);
+          totalPrice = ProductsInCart.reduce((total, product) =>
+            total + (cart[product] * stock.find((prod) => prod.name === product).price)
             , 0);
         })
         console.log(totalPrice);
@@ -62,10 +62,10 @@ export class AppComponent implements OnInit {
 
       public checkout(stock: Observable<Product[]>) {
         combineLatest([this.productsInCart, stock]).subscribe(([cart, stock]) => {
-          const ProductsCart: string[] = Object.keys(cart);
-          ProductsCart.map(cartItem => {
-            const stockProduct = stock.find(stockItem => stockItem.name === cartItem);
-            stockProduct.limit -= cart[cartItem];
+          const ProductsInCart: string[] = Object.keys(cart);
+          ProductsInCart.map(cartProduct => {
+            const stockProduct = stock.find(product => product.name === cartProduct);
+            stockProduct.limit -= cart[cartProduct];
           })
         })
       }
@@ -83,8 +83,8 @@ export class AppComponent implements OnInit {
       const cart = new Cart();
       products.map(products => cart.addProduct(products));
 
-      stock.subscribe(products => console.log('My stock:', products));
-      console.log('My cart:', cart.productsInCart.getValue());
+      stock.subscribe(stock => console.log('My stock:', stock));
+      cart.productsInCart.subscribe(cart => console.log('My Cart:', cart));
 
       cart.updateProductAmount(prod1, 5)
       cart.removeProduct(prod2);
